@@ -1,4 +1,6 @@
+import CurvedLoop from "@/components/CurvedLoop";
 import GooeyNav from "@/components/GooeyNav";
+import ProfileContainer from "@/components/ProfileContainer";
 import TextPressure from "@/components/TextPressure";
 
 const items = [
@@ -47,6 +49,15 @@ export default function Home() {
           />
         </div>
       </div>
+      <ProfileContainer />
+      <CurvedLoop
+        marqueeText="Go ✦ Bonkers ✦ With ✦ UMakeIt! ✦"
+        speed={3}
+        curveAmount={500}
+        direction="right"
+        interactive={true}
+        className="custom-text-style"
+      />
     </div>
   );
 }
