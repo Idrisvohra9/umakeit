@@ -274,9 +274,11 @@ const GooeyNav = ({
       </style>
       <div className="fixed top-5" ref={containerRef}>
         <nav
-          className="flex relative"
+          className="flex relative px-4"
           style={{ transform: "translate3d(0,0,0.01px)" }}
         >
+          <Logo className="w-10 h-10" />
+
           <ul
             ref={navRef}
             className="flex gap-8 list-none p-0 px-4 m-0 relative z-[3]"
@@ -285,9 +287,6 @@ const GooeyNav = ({
               textShadow: "0 1px 1px hsl(205deg 30% 10% / 0.2)",
             }}
           >
-            <li>
-              <Logo className="w-10 h-10" />
-            </li>
             {items.map((item, index) => (
               <li
                 key={index}
