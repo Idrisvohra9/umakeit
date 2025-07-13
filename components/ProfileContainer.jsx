@@ -2,14 +2,15 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import Matter from "matter-js";
 import Modal from "./Modal";
+import { Github } from "lucide-react";
 
 /**
  * ProfileContainer Component
- * 
+ *
  * A high-performance physics-based GitHub profile animation component that automatically
  * triggers on scroll. Uses Matter.js for realistic physics simulation of profile
  * elements that react to user interaction and scroll events.
- * 
+ *
  * Features:
  * - Automatic scroll-based triggering
  * - Optimized animation loop with 60 FPS cap
@@ -63,39 +64,44 @@ const ProfileContainer = ({
   });
 
   // Handle form submission to add a new profile
-  const handleAddProfile = useCallback((e) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim() || !formData.profileUrl.trim()) {
-      return;
-    }
+  const handleAddProfile = useCallback(
+    (e) => {
+      e.preventDefault();
 
-    // Auto-generate avatar URL if not provided
-    let avatarUrl = formData.avatarUrl.trim();
-    if (!avatarUrl && formData.profileUrl.includes("github.com/")) {
-      const username = formData.profileUrl.split("github.com/")[1]?.split("/")[0];
-      if (username) {
-        avatarUrl = `https://github.com/${username}.png`;
+      if (!formData.name.trim() || !formData.profileUrl.trim()) {
+        return;
       }
-    }
 
-    const newProfile = {
-      id: Date.now(),
-      name: formData.name.trim(),
-      profileUrl: formData.profileUrl.trim(),
-      avatarUrl: avatarUrl || "https://github.com/github.png",
-    };
+      // Auto-generate avatar URL if not provided
+      let avatarUrl = formData.avatarUrl.trim();
+      if (!avatarUrl && formData.profileUrl.includes("github.com/")) {
+        const username = formData.profileUrl
+          .split("github.com/")[1]
+          ?.split("/")[0];
+        if (username) {
+          avatarUrl = `https://github.com/${username}.png`;
+        }
+      }
 
-    setProfiles(prevProfiles => [...prevProfiles, newProfile]);
-    setFormData({ name: "", profileUrl: "", avatarUrl: "" });
-    setIsModalOpen(false);
-  }, [formData]);
+      const newProfile = {
+        id: Date.now(),
+        name: formData.name.trim(),
+        profileUrl: formData.profileUrl.trim(),
+        avatarUrl: avatarUrl || "https://github.com/github.png",
+      };
+
+      setProfiles((prevProfiles) => [...prevProfiles, newProfile]);
+      setFormData({ name: "", profileUrl: "", avatarUrl: "" });
+      setIsModalOpen(false);
+    },
+    [formData]
+  );
 
   // Handle form input changes
   const handleInputChange = useCallback((field, value) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-      
+
       // Auto-generate avatar URL from profile URL
       if (field === "profileUrl" && value.includes("github.com/")) {
         const username = value.split("github.com/")[1]?.split("/")[0];
@@ -103,27 +109,22 @@ const ProfileContainer = ({
           newData.avatarUrl = `https://github.com/${username}.png`;
         }
       }
-      
+
       return newData;
     });
-  }, []);
-
-  // Handle removing a profile
-  const handleRemoveProfile = useCallback((profileId) => {
-    setProfiles(prevProfiles => prevProfiles.filter(profile => profile.id !== profileId));
   }, []);
 
   // Memoize the profile elements generation for better performance
   const renderProfiles = useCallback(() => {
     if (!profilesRef.current) return;
-    
+
     profilesRef.current.innerHTML = "";
-    
-    profiles.forEach(profile => {
+
+    profiles.forEach((profile) => {
       const profileDiv = document.createElement("div");
       profileDiv.className = "inline-block mx-2 my-2 select-none profile-item";
       profileDiv.setAttribute("data-profile-id", profile.id);
-      
+
       profileDiv.innerHTML = `
         <div class="flex items-center gap-3">
           <img
@@ -136,52 +137,33 @@ const ProfileContainer = ({
             <span class="text-white font-semibold">${profile.name}</span>
             
           </div>
-          <button
-            class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-400 hover:text-red-300 p-1 rounded"
-            onclick="event.stopPropagation(); window.removeProfile(${profile.id})"
-            title="Remove profile"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
         </div>
       `;
-      
+
       profilesRef.current.appendChild(profileDiv);
     });
   }, [profiles]);
 
   useEffect(() => {
     renderProfiles();
-    
-    // Set up global remove function
-    window.removeProfile = handleRemoveProfile;
-    
-    // Cleanup on unmount
-    return () => {
-      if (window.removeProfile) {
-        delete window.removeProfile;
-      }
-    };
-  }, [renderProfiles, handleRemoveProfile]);
+  }, [renderProfiles]);
 
   // Throttled scroll handler for performance
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
-    
+
     const rect = containerRef.current.getBoundingClientRect();
     const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
-    
+
     if (isInViewport) {
       setEffectStarted(true);
       setIsScrolling(true);
-      
+
       // Clear existing timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
-      
+
       // Set timeout to detect when scrolling stops
       scrollTimeoutRef.current = setTimeout(() => {
         setIsScrolling(false);
@@ -192,7 +174,7 @@ const ProfileContainer = ({
   // Throttled scroll event listener
   useEffect(() => {
     let ticking = false;
-    
+
     const throttledScrollHandler = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
@@ -203,10 +185,12 @@ const ProfileContainer = ({
       }
     };
 
-    window.addEventListener("scroll", throttledScrollHandler, { passive: true });
+    window.addEventListener("scroll", throttledScrollHandler, {
+      passive: true,
+    });
     // Check initial position
     handleScroll();
-    
+
     return () => {
       window.removeEventListener("scroll", throttledScrollHandler);
       if (scrollTimeoutRef.current) {
@@ -214,25 +198,6 @@ const ProfileContainer = ({
       }
     };
   }, [handleScroll]);
-
-  // Memoize Matter.js configuration for better performance
-  const matterConfig = useMemo(() => ({
-    boundaryOptions: {
-      isStatic: true,
-      render: { fillStyle: "transparent" },
-    },
-    bodyOptions: {
-      render: { fillStyle: "transparent" },
-      restitution: 0.4, // Reduced from 0.6 for even less bouncing
-      frictionAir: 0.05, // Increased from 0.02 for more air resistance
-      friction: 0.5, // Increased from 0.3 for more friction
-      density: 0.001, // Added density for more realistic physics
-    },
-    runnerOptions: {
-      delta: 16.666, // 60 FPS cap
-      isFixed: true,
-    },
-  }), []);
 
   // Handle window resize for better responsiveness
   useEffect(() => {
@@ -251,15 +216,8 @@ const ProfileContainer = ({
   useEffect(() => {
     if (!effectStarted) return;
 
-    const {
-      Engine,
-      Render,
-      World,
-      Bodies,
-      Runner,
-      Mouse,
-      MouseConstraint,
-    } = Matter;
+    const { Engine, Render, World, Bodies, Runner, Mouse, MouseConstraint } =
+      Matter;
 
     const containerRect = containerRef.current.getBoundingClientRect();
     const width = containerRect.width;
@@ -289,28 +247,25 @@ const ProfileContainer = ({
     renderRef.current = render;
 
     const boundaryOptions = {
-      ...matterConfig.boundaryOptions,
-      collisionFilter: {
-        category: 0x0002, // Different category for boundaries
-        mask: 0x0001, // Can collide with profile bodies
-      },
+      isStatic: true,
+      render: { fillStyle: "transparent" },
     };
     const floor = Bodies.rectangle(
       width / 2,
-      height - 25, // Move floor up to be within the container
+      height,
       width,
       50,
       boundaryOptions
     );
     const leftWall = Bodies.rectangle(
-      25, // Move left wall to be within the container
+      -20,
       height / 2,
       50,
       height,
       boundaryOptions
     );
     const rightWall = Bodies.rectangle(
-      width - 25, // Move right wall to be within the container
+      width - 20,
       height / 2,
       50,
       height,
@@ -318,7 +273,7 @@ const ProfileContainer = ({
     );
     const ceiling = Bodies.rectangle(
       width / 2,
-      25, // Move ceiling down to be within the container
+      -20,
       width,
       50,
       boundaryOptions
@@ -332,20 +287,18 @@ const ProfileContainer = ({
       const y = rect.top - containerRect.top + rect.height / 2;
 
       const body = Bodies.rectangle(x, y, rect.width, rect.height, {
-        ...matterConfig.bodyOptions,
-        collisionFilter: {
-          category: 0x0001, // Category for profile bodies
-          mask: 0x0001 | 0x0002, // Can collide with other profile bodies AND boundaries
-        },
+        render: { fillStyle: "transparent" },
+        restitution: 0.8,
+        frictionAir: 0.01,
+        friction: 0.2,
       });
-      
-      // Add minimal initial velocity based on scroll state
-      const velocityMultiplier = isScrolling ? 1.5 : 1; // Reduced from 3/2 to 1.5/1
+
+      // Add some initial velocity based on scroll state
       Matter.Body.setVelocity(body, {
-        x: (Math.random() - 0.5) * velocityMultiplier,
-        y: isScrolling ? (Math.random() - 0.5) * 0.5 : 0, // Reduced from 1 to 0.5
+        x: (Math.random() - 0.5) * 5,
+        y: 0,
       });
-      Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.02); // Reduced from 0.05 to 0.02
+      Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.05);
 
       return { elem, body };
     });
@@ -353,51 +306,27 @@ const ProfileContainer = ({
     // Set initial positions
     wordBodies.forEach(({ elem, body }) => {
       elem.style.position = "absolute";
-      elem.style.left = `${body.position.x}px`;
-      elem.style.top = `${body.position.y}px`;
-      elem.style.transform = "translate(-50%, -50%)";
-      elem.style.zIndex = "10"; // Ensure profiles are above canvas
+      elem.style.left = `${
+        body.position.x - body.bounds.max.x + body.bounds.min.x / 2
+      }px`;
+      elem.style.top = `${
+        body.position.y - body.bounds.max.y + body.bounds.min.y / 2
+      }px`;
+      elem.style.transform = "none";
     });
 
-    const mouse = Mouse.create(render.canvas);
+    const mouse = Mouse.create(containerRef.current);
     const mouseConstraint = MouseConstraint.create(engine, {
       mouse,
       constraint: {
         stiffness: mouseConstraintStiffness,
         render: { visible: false },
-        angularStiffness: 0, // Prevent rotation when dragging
-        length: 0.01, // Small length for better control
       },
     });
     render.mouse = mouse;
 
-    // Improve mouse constraint detection
-    mouseConstraint.collisionFilter.mask = 0x0001;
-
-    // Add mouse event handling to profile elements
-    wordBodies.forEach(({ elem, body }) => {
-      // Store reference to body in element for mouse constraint
-      elem.matterBody = body;
-      
-      // Make elements draggable by setting pointer events
-      elem.style.pointerEvents = 'auto';
-      elem.style.cursor = 'grab';
-      
-      // Add mouse event listeners for better interaction
-      elem.addEventListener('mousedown', (e) => {
-        elem.style.cursor = 'grabbing';
-        e.stopPropagation();
-      });
-      
-      elem.addEventListener('mouseup', (e) => {
-        elem.style.cursor = 'grab';
-        e.stopPropagation();
-      });
-      
-      elem.addEventListener('mouseleave', (e) => {
-        elem.style.cursor = 'grab';
-      });
-    });
+    // Remove the extra mouse event handling since we're using the original mouse setup
+    // The mouse constraint will handle all interactions automatically
 
     World.add(engine.world, [
       floor,
@@ -408,97 +337,38 @@ const ProfileContainer = ({
       ...wordBodies.map((wb) => wb.body),
     ]);
 
-    const runner = Runner.create(matterConfig.runnerOptions);
+    const runner = Runner.create();
     runnerRef.current = runner;
     Runner.run(runner, engine);
     Render.run(render);
 
-    // Optimized update loop with performance monitoring
-    let lastTime = 0;
-    const updateLoop = (currentTime) => {
-      // Skip frame if too soon (60 FPS cap)
-      if (currentTime - lastTime < 16.666) {
-        animationFrameRef.current = requestAnimationFrame(updateLoop);
-        return;
-      }
-      
-      lastTime = currentTime;
-
-      // Batch DOM updates
+    const updateLoop = () => {
       wordBodies.forEach(({ body, elem }) => {
         const { x, y } = body.position;
-        
-        // Keep bodies within bounds
-        if (x < 50 || x > width - 50 || y < 50 || y > height - 50) {
-          // Gently push back into bounds
-          const centerX = width / 2;
-          const centerY = height / 2;
-          const forceToCenter = 0.001;
-          
-          Matter.Body.applyForce(body, body.position, {
-            x: (centerX - x) * forceToCenter,
-            y: (centerY - y) * forceToCenter,
-          });
-        }
-        
         elem.style.left = `${x}px`;
         elem.style.top = `${y}px`;
         elem.style.transform = `translate(-50%, -50%) rotate(${body.angle}rad)`;
       });
-
-      // Apply additional forces when scrolling (minimal intensity)
-      if (isScrolling) {
-        wordBodies.forEach(({ body }) => {
-          // Add minimal turbulence when scrolling (reduced from 0.05 to 0.02)
-          if (Math.random() < 0.02) {
-            Matter.Body.applyForce(body, body.position, {
-              x: (Math.random() - 0.5) * 0.0002, // Reduced from 0.0005
-              y: (Math.random() - 0.5) * 0.0002, // Reduced from 0.0005
-            });
-          }
-        });
-      }
-
-      animationFrameRef.current = requestAnimationFrame(updateLoop);
+      Matter.Engine.update(engine);
+      requestAnimationFrame(updateLoop);
     };
-    
-    animationFrameRef.current = requestAnimationFrame(updateLoop);
+    updateLoop();
 
     return () => {
-      // Cleanup mouse event listeners
-      wordBodies.forEach(({ elem }) => {
-        elem.removeEventListener('mousedown', () => {});
-        elem.removeEventListener('mouseup', () => {});
-        elem.removeEventListener('mouseleave', () => {});
-      });
-      
-      // Cleanup
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (renderRef.current) {
-        Render.stop(renderRef.current);
-      }
-      if (runnerRef.current) {
-        Runner.stop(runnerRef.current);
-      }
+      Render.stop(render);
+      Runner.stop(runner);
       if (render.canvas && canvasContainerRef.current) {
         canvasContainerRef.current.removeChild(render.canvas);
       }
       World.clear(engine.world);
       Engine.clear(engine);
-      engineRef.current = null;
-      renderRef.current = null;
-      runnerRef.current = null;
     };
   }, [
     effectStarted,
-    isScrolling,
     gravity,
     wireframes,
     backgroundColor,
     mouseConstraintStiffness,
-    matterConfig,
     profiles,
   ]);
 
@@ -532,29 +402,28 @@ const ProfileContainer = ({
     <>
       <div
         ref={containerRef}
-        className="relative z-[1] w-full h-full text-center pt-8 overflow-hidden"
+        className="relative z-[1] mx-auto max-w-3xl h-screen text-center pt-4 pb-4 rounded-2xl border border-gray-700 shadow-lg"
       >
         {/* Add Profile Button */}
-        <div className="mb-6">
+        <div className="mb-6 absolute top-4 right-4">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 relative z-10 cursor-pointer"
+            className="text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 relative z-10 cursor-pointer"
           >
-            Add Your Profile
+            Add Your Profile <Github className="inline-block ml-2" />
           </button>
         </div>
 
         {/* Profiles Container */}
-        <div
-          ref={profilesRef}
-          className="block min-h-[800px]"
-        />
-        
+        <div ref={profilesRef} className="block min-h-[800px]" />
+
         {/* Show message when no profiles */}
         {profiles.length === 0 && (
           <div className="text-gray-400 text-center py-8">
             <p className="text-lg">No profiles added yet!</p>
-            <p className="text-sm mt-2">Click "Add Your Profile" to get started</p>
+            <p className="text-sm mt-2">
+              Click "Add Your Profile" to get started
+            </p>
           </div>
         )}
 
@@ -568,10 +437,13 @@ const ProfileContainer = ({
           <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Add Your GitHub Profile
           </h2>
-          
+
           <form onSubmit={handleAddProfile} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
                 Profile Name
               </label>
               <input
@@ -586,14 +458,19 @@ const ProfileContainer = ({
             </div>
 
             <div>
-              <label htmlFor="profileUrl" className="block text-sm font-medium text-gray-300 mb-2">
+              <label
+                htmlFor="profileUrl"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
                 GitHub Profile URL
               </label>
               <input
                 type="url"
                 id="profileUrl"
                 value={formData.profileUrl}
-                onChange={(e) => handleInputChange("profileUrl", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("profileUrl", e.target.value)
+                }
                 placeholder="https://github.com/yourusername"
                 className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
                 required
@@ -601,7 +478,10 @@ const ProfileContainer = ({
             </div>
 
             <div>
-              <label htmlFor="avatarUrl" className="block text-sm font-medium text-gray-300 mb-2">
+              <label
+                htmlFor="avatarUrl"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
                 Profile Photo URL
               </label>
               <input

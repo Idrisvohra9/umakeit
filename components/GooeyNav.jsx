@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
+import { Logo } from "./Logo";
 
 const GooeyNav = ({
   items,
@@ -284,6 +285,9 @@ const GooeyNav = ({
               textShadow: "0 1px 1px hsl(205deg 30% 10% / 0.2)",
             }}
           >
+            <li>
+              <Logo className="w-10 h-10" />
+            </li>
             {items.map((item, index) => (
               <li
                 key={index}
